@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AlertMap PRO v13.0 — Командна мапа тривог України</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;800&family=Russo+One&family=Jura:wght@500;700&family=Play:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=Oswald:wght@400;600&family=Rubik:wght@400;600;800&family=Comfortaa:wght@500;700&family=IBM+Plex+Mono:wght@500;700&family=Press+Start+2P&family=VT323&family=Montserrat:wght@500;700&family=Montserrat+Alternates:wght@600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Stalinist+One&family=Philosopher:wght@400;700&family=Playfair+Display:wght@500;800&family=Fira+Sans+Condensed:wght@400;600&family=Fira+Sans:wght@400;600;800&family=Ubuntu+Condensed&family=Kelly+Slab&family=Marmelad&family=Neucha&family=Pacifico&family=Caveat:wght@500;700&family=Seymour+One&family=Ruslan+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-device="laptop">
+<div id="appShell" class="app">
+  <div class="head">
+    <div class="brand-wrap">
+      <div class="brand">
+        <span class="brand-glyph">🇺🇦</span>
+        <span>AlertMap <em class="brand-pro">PRO</em></span>
+        <span class="ver-tag">v13.0</span>
+        <span id="deviceBadge" class="demo-pill">💻 Ноутбук (1280px)</span>
+      </div>
+      <div id="dangerChip" class="danger-chip" data-lvl="0" title="Інтегральний індекс небезпеки"><i></i><span id="dangerChipText">Спокійно</span></div>
+      <div class="threat-meter" title="Частка активних зон від загальної кількості">
+        <span>Охоплення:</span>
+        <strong id="coveragePct" class="tabular">0%</strong>
+        <div class="coverage-bar"><div id="coverageBarFill" class="coverage-bar-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="device-switcher" role="group" aria-label="Вибір розміру інтерфейсу під пристрій">
+      <button id="dev-auto" class="dev-btn" onclick="setDeviceProfile('auto')" title="Автоматично під розмір екрана">🔄 Авто</button>
+      <button id="dev-phone" class="dev-btn" onclick="setDeviceProfile('phone')" title="Компактний режим для смартфона (460px)">📱 Смартфон</button>
+      <button id="dev-tablet" class="dev-btn" onclick="setDeviceProfile('tablet')" title="Режим для планшета (920px)">📟 Планшет</button>
+      <button id="dev-laptop" class="dev-btn" onclick="setDeviceProfile('laptop')" title="Стандартний режим для ноутбука (1280px)">💻 Ноутбук</button>
+      <button id="dev-tv" class="dev-btn" onclick="setDeviceProfile('tv')" title="Широкоформатний командний центр для телевізора (1880px)">📺 Телевізор</button>
+    </div>
+
+    <div class="head-right">
+      <button id="neonToggleBtn" class="chip-ctrl" onclick="toggleNeonMode()" title="Перемкнути неонову підсвітку інтерфейсу">✨ Неон</button>
+      <button class="chip-ctrl" onclick="showAnalyticsModal()" title="Аналітика тривог по областях (клавіша A)">📊 Аналітика</button>
+      <button class="chip-ctrl" onclick="showGlobalLogModal()" title="Загальний журнал усіх подій по країні (клавіша G)">📜 Глобальний лог</button>
+      <button id="alertsCenterBtn" class="chip-ctrl notif-btn" onclick="showAlertsCenter()" title="Повідомлення про повітряну тривогу та загрози">
+        🔔 Сповіщення
+        <span id="unreadAlertsBadge" class="notif-badge zero">0</span>
+      </button>
+      <button class="chip-ctrl" onclick="toggleFullscreen()" title="Повноекранний режим (клавіша F)">⛶ Екран</button>
+      <button class="chip-ctrl" onclick="exportStateJson()" title="Експортувати стани та історію у JSON">📤 JSON</button>
+      <button class="chip-ctrl" onclick="exportReportTxt()" title="Завантажити текстове зведення у .TXT">📄 TXT</button>
+      <button class="chip-ctrl" onclick="document.getElementById('importFileInput').click()" title="Імпортувати стан з JSON">📥 Імпорт</button>
+      <input id="importFileInput" type="file" accept=".json,application/json" style="display:none" onchange="importStateJson(this)">
+      <div class="theme-dots" id="themeDots" title="Тема інтерфейсу (клавіша T)">
+        <button class="theme-dot" data-t="cyber" style="--dc:#38bdf8" onclick="setTheme('cyber')" aria-label="Тема Кібер"></button>
+        <button class="theme-dot" data-t="crimson" style="--dc:#fb7185" onclick="setTheme('crimson')" aria-label="Тема Багряна"></button>
+        <button class="theme-dot" data-t="emerald" style="--dc:#34d399" onclick="setTheme('emerald')" aria-label="Тема Смарагд"></button>
+        <button class="theme-dot" data-t="amber" style="--dc:#fbbf24" onclick="setTheme('amber')" aria-label="Тема Бурштин"></button>
+        <button class="theme-dot" data-t="violet" style="--dc:#a78bfa" onclick="setTheme('violet')" aria-label="Тема Фіалка"></button>
+      </div>
+      <button class="chip-ctrl" onclick="openPalette()" title="Командна палітра (Ctrl+K)">⌘ Палітра</button>
+      <button class="chip-ctrl" onclick="openHelp()" title="Гарячі клавіші (?)">❓</button>
+      <button id="soundToggle" class="chip-ctrl" onclick="toggleSound()">🔇 Звук: вимк.</button>
+      <div id="clock" class="chip-ctrl clock-pill tabular">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="ticker-bar">
+    <span class="ticker-badge"><span class="live-dot"></span> Ефір</span>
+    <div id="tickerFeed" class="ticker-feed">Система готова. Авто-ефір видає пачки з декількох тривог та відбоїв з реальним відліком часу.</div>
+    <div class="live-sim-controls">
+      <button class="mini-pulse-btn" onclick="toggleLogDrawer()" title="Журнал ефіру (клавіша L)">🗞 Журнал</button>
+      <button class="mini-pulse-btn" onclick="runAutoSimStep()" title="Виконати один такт пакетного авто-ефіру зараз">⚡ Такт зараз</button>
+      <button id="autoSimBtn" class="mini-live-btn" onclick="toggleAutoSim()" title="Автоматична симуляція пачок тривог та відбоїв у реальному часі">▶ Авто-ефір</button>
+      <select id="autoSimBurstMode" class="mini-select" onchange="updateAutoSimBurstMode(this.value)" title="Масштаб пачки тривог та відбоїв за один такт">
+        <option value="mixed" selected>Пачка: 1–20 подій</option>
+        <option value="small">Легка: 1–5 подій</option>
+        <option value="heavy">Масова: 8–24 події</option>
+      </select>
+      <select id="autoSimInterval" class="mini-select" onchange="updateAutoSimInterval(this.value)" title="Інтервал тактів авто-ефіру">
+        <option value="3000">3 с</option>
+        <option value="5000">5 с</option>
+        <option value="10000" selected>10 с</option>
+        <option value="15000">15 с</option>
+        <option value="30000">30 с</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button id="btn-kyiv" class="city-quick-btn" onclick="selectCityDirect('м. Київ')">🏛️ м. Київ</button>
+    <button id="btn-zaporizhzhia" class="city-quick-btn" onclick="selectCityDirect('м. Запоріжжя')">🏙️ м. Запоріжжя</button>
+    <button id="btn-kharkiv" class="city-quick-btn" onclick="selectCityDirect('м. Харків')">🏙️ м. Харків</button>
+
+    <div class="search-wrap">
+      <input
+        id="searchInput"
+        class="search-box"
+        type="text"
+        placeholder="🔍 Пошук району, міста або області (/ для фокусу)..."
+        oninput="handleSearch(this.value)"
+        onfocus="handleSearch(this.value)"
+      >
+      <button id="clearSearchBtn" class="clear-search-btn" onclick="clearSearchInput()" title="Очистити пошук">×</button>
+      <div id="searchResults" class="search-results"></div>
+    </div>
+
+    <select id="threatFilter" class="filter-select" onchange="setFilterMode(this.value)" title="Фільтр загроз на карті">
+      <option value="all">Усі загрози</option>
+      <option value="active_only">Лише активні зони</option>
+      <option value="long_1h">⏱️ Тривають &gt; 1 год</option>
+      <option value="red">Лише 🔴 Червона</option>
+      <option value="yellow">Лише 🟡 Жовта</option>
+      <option value="artillery">Лише 🟠 Артобстріл</option>
+      <option value="chemical">Лише ☣️ Хімічна</option>
+      <option value="radiation">Лише ☢️ Радіаційна</option>
+      <option value="fighting">Лише 🟢 Бої</option>
+    </select>
+
+    <div class="counter-pill tabular">
+      <span class="pulse-dot"></span>
+      Активних зон: <span id="activeCount">0</span>
+    </div>
+  </div>
+
+  <div class="tools-row" id="toolsRow">
+    <span class="tool-label">Інструменти</span>
+    <button id="undoBtn" class="tool-btn" onclick="undoLast()" title="Скасувати останню масову дію (Ctrl+Z)">↩ Скасувати (0)</button>
+    <button class="tool-btn" onclick="showTimeModal()" title="Часова аналітика (E)">📈 Часова аналітика</button>
+    <span class="tool-sep"></span>
+    <button id="compactBtn" class="tool-btn" onclick="toggleCompact()" title="Щільний режим (D)">🗜️ Щільно</button>
+    <button class="tool-btn" onclick="scaleUi(-0.1)" title="Зменшити панелі">A−</button>
+    <button class="tool-btn" onclick="scaleUi(0.1)" title="Збільшити панелі">A+</button>
+    <span class="tool-sep"></span>
+    <span class="tool-label">Неон</span>
+    <select id="neonPreset" class="mini-select" onchange="setNeonPreset(this.value)" title="Неонова палітра">
+      <option value="auto">Авто (за темою)</option><option value="synthwave">Синтвейв</option><option value="matrix">Матриця</option>
+      <option value="inferno">Інферно</option><option value="ice">Лід</option>
+    </select>
+    <input id="neonIntensity" class="neon-range" type="range" min="0.3" max="1.8" step="0.1" value="1" oninput="setNeonIntensity(this.value)" title="Яскравість неону">
+    <button id="crtBtn" class="tool-btn" onclick="toggleFx('crt')" title="CRT-скан-лінії (C)">📺 CRT</button>
+    <button id="partBtn" class="tool-btn" onclick="toggleFx('particles')">✨ Частинки</button>
+    <button id="glowBtn" class="tool-btn" onclick="toggleFx('cursor')">💡 Курсор</button>
+    <button id="gridBtn" class="tool-btn" onclick="toggleFx('horizon')">🌆 Горизонт</button>
+    <span class="tool-sep"></span>
+    <span class="tool-label">Шрифт</span>
+    <select id="fontPack" class="mini-select" onchange="setFontPack(this.value)" title="Пакет шрифтів">
+      <option value="cyber">Кібер</option><option value="tech">Техно</option><option value="play">Play + Russo</option>
+      <option value="mono">Термінал</option><option value="classic">Класичний</option>
+    </select>
+    <button id="voiceBtn" class="tool-btn" onclick="toggleVoice()" title="Голосове оповіщення про червону тривогу">🗣️ Голос</button>
+    <button class="tool-btn" onclick="copyShareLink()" title="Скопіювати посилання зі стилями">🔗 Посилання</button>
+    <span class="tool-sep"></span>
+    <button id="ultraBtn" class="tool-btn" onclick="toggleUltra()" title="УЛЬТРА-НЕОН (X)">⚡ УЛЬТРА</button>
+    <button id="rainbowBtn" class="tool-btn" onclick="toggleRainbow()" title="Райдужний неон">🌈 Радуга</button>
+    <span class="tool-sep"></span>
+    <span class="tool-label">Звук тривоги</span>
+    <select id="soundProfile" class="mini-select" onchange="setSoundProfile(this.value)">
+      <option value="classic">Класичний</option><option value="siren">Сирена</option><option value="radar">Радар</option><option value="beep">Біпер</option>
+    </select>
+  </div>
+
+  <section class="kpi-strip" id="kpiStrip">
+    <div class="kpi-card"><span class="kpi-lbl">Активні зони</span><strong id="kpiActive" class="kpi-val tabular">0</strong><span id="kpiActiveSub" class="kpi-sub">з 0 зон</span></div>
+    <div class="kpi-card"><span class="kpi-lbl">Індекс небезпеки</span><strong id="kpiIndex" class="kpi-val tabular">0.0%</strong><span id="kpiLevel" class="kpi-sub">Спокійно</span></div>
+    <div class="kpi-card"><span class="kpi-lbl">Найдовша тривога</span><strong id="kpiLongest" class="kpi-val tabular">—</strong><span id="kpiLongestName" class="kpi-sub">—</span></div>
+    <div class="kpi-card"><span class="kpi-lbl">Середня тривалість</span><strong id="kpiAvg" class="kpi-val tabular">—</strong><span class="kpi-sub">по активних зонах</span></div>
+    <div class="kpi-card kpi-spark"><span class="kpi-lbl">Динаміка активних зон • 5 хв</span><canvas id="sparkCanvas" width="360" height="56"></canvas></div>
+  </section>
+
+  <section class="insight-strip" id="insightStrip">
+    <div class="insight-card"><span class="kpi-lbl">Розподіл загроз</span>
+      <div class="donut-row"><canvas id="donutCanvas" width="120" height="120"></canvas><div id="donutLegend" class="donut-legend"></div></div></div>
+    <div class="insight-card"><span class="kpi-lbl">Топ-5 областей за охопленням</span><div id="topRegions" class="top-regions"></div></div>
+    <div class="insight-card"><span class="kpi-lbl">Статистика сесії</span>
+      <div class="session-grid">
+        <div class="sess-cell"><strong id="sessStarted">0</strong><span>Оголошено</span></div>
+        <div class="sess-cell"><strong id="sessCleared">0</strong><span>Відбоїв</span></div>
+        <div class="sess-cell"><strong id="sessPeak">0</strong><span>Пік зон</span></div>
+        <div class="sess-cell"><strong id="sessNow">0</strong><span>Зараз</span></div>
+      </div></div>
+  </section>
+
+  <div class="workspace">
+    <div id="mapStage" class="map-stage">
+      <div class="map-hud-bar">
+        <div class="hud-group">
+          <button id="layer-dark" class="hud-btn active-layer" onclick="switchBaseLayer('dark')">🌑 Темна мапа</button>
+          <button id="layer-light" class="hud-btn" onclick="switchBaseLayer('light')">☀️ Світла мапа</button>
+          <button id="layer-topo" class="hud-btn" onclick="switchBaseLayer('topo')">🧭 Рельєфна мапа</button>
+          <button id="layer-voyager" class="hud-btn" onclick="switchBaseLayer('voyager')">🌤️ Voyager</button>
+          <button id="layer-osm" class="hud-btn" onclick="switchBaseLayer('osm')">🌍 OSM</button>
+          <button id="layer-satellite" class="hud-btn" onclick="switchBaseLayer('satellite')">🛰️ Супутникова мапа</button>
+        </div>
+        <div class="hud-group">
+          <button class="hud-btn" onclick="zoomStep(1.8)" title="Наблизити">➕ Зум</button>
+          <button class="hud-btn" onclick="zoomStep(-1.8)" title="Віддалити">➖ Зум</button>
+          <button class="hud-btn" onclick="zoomToSelectedZone()">🎯 Наблизити зону</button>
+          <button class="hud-btn" onclick="resetMapView()">🗺️ Уся Україна</button>
+          <button id="heatBtn" class="hud-btn active-layer" onclick="toggleHeat()" title="Теплове свічення (H)">🔥 Тепло</button>
+          <button class="hud-btn" onclick="zoomToActive()" title="Фокус на активних зонах (J)">🎯 Активні</button>
+          <select id="regionJump" class="mini-select region-select" onchange="jumpRegion(this.value)" title="Швидкий перехід до регіону">
+            <option value="">🧭 Регіон…</option><option value="west">Захід</option><option value="center">Центр</option>
+            <option value="north">Північ</option><option value="east">Схід</option><option value="south">Південь</option>
+          </select>
+          <button id="pingToggleBtn" class="hud-btn active-layer" onclick="togglePings()" title="Пульс-маркери активних зон (P)">📡 Пульс</button>
+          <button id="cfgBtn" class="hud-btn" onclick="openCfg()" title="Налаштування мапи (Y)">⚙️ Налаштування</button>
+          <button id="mapStyleBtn" class="hud-btn active-layer" onclick="openMapStyles()" title="Галерея стилів мапи (S)">🎨 Стиль мапи</button>
+          <button id="badgeBtn" class="hud-btn active-layer" onclick="toggleBadges()" title="Лічильники активних районів на областях">🔢 Бейджі</button>
+          <button id="gridMapBtn" class="hud-btn" onclick="toggleGrid()" title="Координатна сітка (V)">🌐 Сітка</button>
+          <button id="ringsBtn" class="hud-btn" onclick="toggleRings()" title="Кільця відстаней навколо зони (O)">◎ Кільця</button>
+          <button id="rulerBtn" class="hud-btn" onclick="toggleRuler()" title="Лінійка (M)">📏 Лінійка</button>
+          <button id="patrolBtn" class="hud-btn" onclick="togglePatrol()" title="Патруль по активних зонах (Q)">🎬 Патруль</button>
+          <button id="labelsBtn" class="hud-btn active-layer" onclick="toggleLabels()" title="Підписи областей (B)">🏷️ Підписи</button>
+          <button id="kioskBtn" class="hud-btn" onclick="toggleKiosk()" title="Режим кіоску (K)">🖥️ Кіоск</button>
+          <button id="uiThemeBtn" class="hud-btn" onclick="toggleUiTheme()" title="Світлий або темний інтерфейс (U)">☀️ Світлий UI</button>
+          <button id="legendToggleBtn" class="hud-btn active-layer" onclick="toggleLegend()" title="Показати або приховати легенду">📌 Легенда</button>
+        </div>
+      </div>
+
+      <div id="map"></div>
+      <div id="quickDock" class="quick-dock">
+        <div id="qdHint" class="qd-hint">① Клікніть район або місто на мапі</div>
+        <div class="qd-row">
+          <button class="qd-btn" style="--qc:#eab308" title="Жовтий рівень (1)" onclick="applyStatus('air','yellow')">🟡</button>
+          <button class="qd-btn" style="--qc:#ef4444" title="Червоний рівень — повітряна тривога (2)" onclick="applyStatus('air','red')">🔴</button>
+          <button class="qd-btn" style="--qc:#facc15" title="Радіаційна небезпека (3)" onclick="applyStatus('radiation','radiation')">☢️</button>
+          <button class="qd-btn" style="--qc:#a855f7" title="Хімічна загроза (4)" onclick="applyStatus('chemical','chemical')">☣️</button>
+          <button class="qd-btn" style="--qc:#f97316" title="Артилерійська загроза (5)" onclick="applyStatus('artillery','artillery')">🟠</button>
+          <button class="qd-btn" style="--qc:#10b981" title="Вуличні бої (6)" onclick="applyStatus('fighting','fighting')">🟢</button>
+          <button class="qd-btn" style="--qc:#94a3b8" title="Відбій для обраної зони (0)" onclick="stopAlert()">🔕</button>
+        </div>
+      </div>
+      <div id="coordsHud" class="coords-hud">— координати —</div>
+      <div id="loading" class="loading">Завантаження GeoJSON кордонів…</div>
+      <div id="mapLegend" class="map-legend">
+        <div class="legend-title">Рівні та типи загроз</div>
+        <div><span class="lg-box" style="background:#ef4444"></span> Червона тривога</div>
+        <div><span class="lg-box" style="background:#eab308"></span> Жовтий рівень</div>
+        <div><span class="lg-box" style="background:#f97316"></span> Артобстріл</div>
+        <div><span class="lg-box" style="background:#a855f7"></span> Хімічна</div>
+        <div><span class="lg-box" style="background:#facc15"></span> Радіаційна</div>
+        <div><span class="lg-box" style="background:#10b981"></span> Вуличні бої</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div>
+        <div class="stats-bar">
+          <div class="stat-tile" onclick="setFilterMode('red')" title="Фільтр: Червона">
+            <span id="st-red" class="st-val tabular" style="color:#f87171">0</span>
+            <span class="st-lbl">🔴 Червона</span>
+          </div>
+          <div class="stat-tile" onclick="setFilterMode('yellow')" title="Фільтр: Жовта">
+            <span id="st-yellow" class="st-val tabular" style="color:#facc15">0</span>
+            <span class="st-lbl">🟡 Жовта</span>
+          </div>
+          <div class="stat-tile" onclick="setFilterMode('artillery')" title="Фільтр: Артобстріл">
+            <span id="st-artillery" class="st-val tabular" style="color:#fb923c">0</span>
+            <span class="st-lbl">🟠 Арт.</span>
+          </div>
+          <div class="stat-tile" onclick="setFilterMode('chemical')" title="Фільтр: Хімічна">
+            <span id="st-chemical" class="st-val tabular" style="color:#c084fc">0</span>
+            <span class="st-lbl">☣️ Хім.</span>
+          </div>
+          <div class="stat-tile" onclick="setFilterMode('radiation')" title="Фільтр: Радіаційна">
+            <span id="st-radiation" class="st-val tabular" style="color:#fde047">0</span>
+            <span class="st-lbl">☢️ Рад.</span>
+          </div>
+          <div class="stat-tile" onclick="setFilterMode('fighting')" title="Фільтр: Бої">
+            <span id="st-fighting" class="st-val tabular" style="color:#34d399">0</span>
+            <span class="st-lbl">🟢 Бої</span>
+          </div>
+        </div>
+
+        <div class="hotspot-box">
+          <div class="fav-head">
+            <span>🔥 Гарячі області зараз</span>
+            <button class="fav-pin-btn" onclick="showAnalyticsModal()">Усі регіони →</button>
+          </div>
+          <div id="hotspotChips" class="active-chips">
+            <span style="color:var(--muted);font-size:11.5px">Спокійно — активних тривог по областях немає.</span>
+          </div>
+        </div>
+
+        <div class="favorites-box">
+          <div class="fav-head">
+            <span>⭐ Закріплені зони</span>
+            <div class="fav-actions-inline">
+              <button class="fav-pin-btn" onclick="clearFavoritesAlerts()" title="Зняти тривоги у закріплених зонах">🔕 Відбій у вибраних</button>
+              <button id="favToggleBtn" class="fav-pin-btn" onclick="toggleFavoriteCurrentZone()" title="Закріпити або прибрати поточну зону">☆ Закріпити обрану</button>
+            </div>
+          </div>
+          <div id="favoritesChips" class="active-chips">
+            <span style="color:var(--muted);font-size:11.5px">Оберіть зону та натисніть «Закріпити обрану».</span>
+          </div>
+        </div>
+
+        <div class="zone-card">
+          <div class="zone-info">
+            <div id="selected" class="zone-title">Обери район, м. Київ, м. Запоріжжя або м. Харків</div>
+            <div id="parentOblastLabel" class="zone-sub">Клікни по будь-якому району або місту • Клавіші: 1–6 загрози, 0 відбій, / пошук, R випадкова, W колесо, F екран, A аналітика, G лог</div>
+          </div>
+          <div class="zone-badges">
+            <div id="liveDurationBadge" class="timer-pill tabular" style="display:none">⏱ Триває: 0 с</div>
+            <div id="currentStatusBadge" class="status-pill">Статус: не обрано</div>
+          </div>
+        </div>
+
+        <div class="alert-console" id="alertConsole">
+          <div class="ac-head"><span>🚨 Консоль оголошення</span><span id="acBadge" class="ac-badge">зона не обрана</span></div>
+          <div id="acStatus" class="ac-status">Оберіть район або місто на мапі</div>
+          <div class="ac-row"><span class="ac-lbl">Охоплення</span>
+            <div class="seg" id="scopeSeg"><button data-s="zone" class="on" onclick="setScope('zone')">Зона</button><button data-s="oblast" onclick="setScope('oblast')">Область</button><button data-s="ukraine" onclick="setScope('ukraine')">Україна</button></div></div>
+          <div class="ac-row"><span class="ac-lbl">Авто-відбій</span>
+            <div class="seg" id="offSeg"><button data-m="0" class="on" onclick="setAutoOff(0)">Ні</button><button data-m="1" onclick="setAutoOff(1)">1 хв</button><button data-m="5" onclick="setAutoOff(5)">5 хв</button><button data-m="15" onclick="setAutoOff(15)">15 хв</button><button data-m="60" onclick="setAutoOff(60)">60 хв</button></div></div>
+          <div class="ac-row"><span class="ac-lbl">Останні дії</span></div>
+          <div id="acRecent" class="ac-recent"></div>
+        </div>
+
+        <div class="note-box">
+          <div class="note-row">
+            <span class="fav-head" style="margin:0"><span>📝 Нотатка зони: <span id="noteHint">оберіть зону</span></span></span>
+            <select id="autoOffSel" class="mini-select" onchange="scheduleAutoClear(this.value)" title="Автоматичний відбій обраної зони за таймером">
+              <option value="">⏲ Авто-відбій…</option><option value="1">через 1 хв</option><option value="5">через 5 хв</option>
+              <option value="15">через 15 хв</option><option value="60">через 60 хв</option>
+            </select>
+          </div>
+          <textarea id="zoneNote" placeholder="Коротка нотатка до обраної зони (зберігається в браузері)…" disabled></textarea>
+        </div>
+
+        <div class="grid-btns">
+          <button class="btn yel" id="btn-yellow" onclick="applyStatus('air','yellow')"><span class="kbd-hint">1</span>🟡 Жовтий рівень<small>підвищена увага / загроза БпЛА</small></button>
+          <button class="btn air" id="btn-red" onclick="applyStatus('air','red')"><span class="kbd-hint">2</span>🔴 Червоний рівень<small>повітряна тривога</small></button>
+          <button class="btn rad" id="btn-radiation" onclick="applyStatus('radiation','radiation')"><span class="kbd-hint">3</span>☢️ Радіаційна небезпека<small>радіаційний фон / загроза</small></button>
+          <button class="btn chem" id="btn-chemical" onclick="applyStatus('chemical','chemical')"><span class="kbd-hint">4</span>☣️ Хімічна загроза<small>хімічне забруднення</small></button>
+          <button class="btn art" id="btn-artillery" onclick="applyStatus('artillery','artillery')"><span class="kbd-hint">5</span>🟠 Артилерійська загроза<small>загроза артобстрілу</small></button>
+          <button class="btn fight" id="btn-fighting" onclick="applyStatus('fighting','fighting')"><span class="kbd-hint">6</span>🟢 Вуличні бої<small>бойові дії в межах громади</small></button>
+          <button class="btn off" onclick="stopAlert()"><span class="kbd-hint">0</span>🔕 Відбій для обраної зони<small>завершити активний статус і записати реальну тривалість у журнал</small></button>
+        </div>
+
+        <div class="actions">
+          <button class="btn-ukraine-all" id="ukraineAlertBtn" onclick="applyToWholeUkraine()" title="Застосувати поточну обрану загрозу одразу до всіх зон України">🇺🇦 На всю Україну</button>
+          <button class="btn-oblast-all" id="oblastAlertBtn" onclick="applyToWholeOblast()" style="display:none">🚨 На всю область</button>
+          <button class="btn-oblast-off" id="oblastOffBtn" onclick="clearWholeOblast()" style="display:none">🔕 Відбій по області</button>
+          <button class="btn-random" onclick="simulateRandomThreat()">🎲 Випадкова тривога</button>
+          <button class="btn-burst" onclick="simulateBurstThreats(8)">⚡ Хвиля (8 зон)</button>
+          <button class="btn-wheel" onclick="spinThreatWheel()">🎡 Колесо загроз</button>
+          <button class="btn-clear-type" onclick="clearAlertsByCode(lastSelectedThreat.level || 'red')" title="Зняти тривоги лише поточного вибраного рівня">🛡️ Відбій рівня</button>
+          <select id="scenarioSelect" class="scenario-select" onchange="runPresetScenario(this.value)" title="Швидкий сценарій тривог">
+            <option value="">⚡ Сценарій симуляції...</option>
+            <option value="capital">🏛️ Столичний вузол (Київ + обл.)</option>
+            <option value="east_south">🔥 Схід та Південь (Харків, Запоріжжя, Дніпро, Одеса)</option>
+            <option value="north_center">🛸 Північ і Центр (БпЛА + тривога)</option>
+            <option value="west_shield">🛡️ Західний регіон (жовтий рівень)</option>
+          </select>
+          <button class="btn-report" onclick="copyAlertSummary()">📋 Зведення</button>
+          <button class="hist" onclick="showHistory()">🕘 Історія зони</button>
+          <button class="clear-all" onclick="clearAllAlerts()">🧹 Відбій всюди</button>
+          <button class="danger-btn" onclick="clearAllHistory()">🗑️ Очистити історію</button>
+        </div>
+      </div>
+
+      <div class="active-strip">
+        <div class="active-strip-head">
+          <span>⚡ Швидкий перехід та відбій активних зон</span>
+          <span id="activeStripSummary" class="tabular">0 активних</span>
+        </div>
+        <div id="activeZonesChips" class="active-chips">
+          <span style="color:var(--muted);font-size:11.5px">Наразі немає активних тривог.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <span id="fontStatusLabel">Шрифт: <b>e-Ukraine, sans-serif</b> • Реальний відлік тривалості • Режими: Смартфон, Планшет, Ноутбук, Телевізор</span>
+    <span>AlertMap PRO v13.0 • Локальне збереження у браузері (DEMO)</span>
+  </div>
+</div>
+
+<div id="toastStack" class="toast-stack"></div>
+
+<div class="modalback" id="modal" onclick="if(event.target===this)closeHistory()">
+  <div class="modal">
+    <div class="mh">
+      <button class="close" onclick="closeHistory()">×</button>
+      <div class="mh-top">
+        <small>Журнал подій та реальної тривалості тривог</small>
+        <button class="clear-zone-hist-btn" onclick="clearCurrentZoneHistory()">🗑️ Очистити історію</button>
+      </div>
+      <h2 id="historyTitle">Зона</h2>
+      <div class="hist-meta-bar">
+        <div class="hist-tabs">
+          <button id="htab-all" class="hist-tab active" onclick="setHistoryFilter('all')">Усі</button>
+          <button id="htab-active" class="hist-tab" onclick="setHistoryFilter('active')">Активні</button>
+          <button id="htab-done" class="hist-tab" onclick="setHistoryFilter('done')">Завершені</button>
+        </div>
+        <div id="historyTotalDuration" class="hist-total tabular">Сумарно: 0 с</div>
+      </div>
+    </div>
+    <div id="historyBody" class="history-list"></div>
+  </div>
+</div>
+
+<div class="modalback" id="alertsModal" onclick="if(event.target===this)closeAlertsCenter()">
+  <div class="modal">
+    <div class="mh">
+      <button class="close" onclick="closeAlertsCenter()">×</button>
+      <div class="mh-top">
+        <small>Вхідні повідомлення про повітряну тривогу та загрози</small>
+        <button class="clear-zone-hist-btn" onclick="clearAlertNotifications()">🗑️ Очистити сповіщення</button>
+      </div>
+      <h2>🔔 Сповіщення про тривоги</h2>
+      <div class="hist-meta-bar">
+        <div class="hist-tabs">
+          <button id="ntab-all" class="hist-tab active" onclick="setNotifFilter('all')">Усі</button>
+          <button id="ntab-air" class="hist-tab" onclick="setNotifFilter('air')">🔴 Повітряні</button>
+          <button id="ntab-other" class="hist-tab" onclick="setNotifFilter('other')">⚠️ Інші</button>
+        </div>
+        <div id="notifCountLabel" class="hist-total tabular">Повідомлень: 0</div>
+      </div>
+    </div>
+    <div id="alertsModalBody" class="history-list"></div>
+  </div>
+</div>
+
+<div class="modalback" id="globalLogModal" onclick="if(event.target===this)closeGlobalLogModal()">
+  <div class="modal">
+    <div class="mh">
+      <button class="close" onclick="closeGlobalLogModal()">×</button>
+      <div class="mh-top">
+        <small>Останні зафіксовані події по всіх зонах України</small>
+        <button class="clear-zone-hist-btn" onclick="clearAllHistory(); renderGlobalLogModal();">🗑️ Очистити все</button>
+      </div>
+      <h2>📜 Глобальний журнал тривог</h2>
+      <div class="hist-meta-bar">
+        <span class="hist-total tabular" id="globalLogCount">Записів: 0</span>
+      </div>
+    </div>
+    <div id="globalLogBody" class="history-list"></div>
+  </div>
+</div>
+
+<div class="modalback" id="analyticsModal" onclick="if(event.target===this)closeAnalyticsModal()">
+  <div class="modal">
+    <div class="mh">
+      <button class="close" onclick="closeAnalyticsModal()">×</button>
+      <div class="mh-top">
+        <small>Розподіл активних тривог за регіонами України</small>
+        <button class="clear-zone-hist-btn" onclick="renderAnalyticsModal()">🔄 Оновити</button>
+      </div>
+      <h2>📊 Регіональна аналітика</h2>
+      <div class="hist-meta-bar">
+        <span class="hist-total tabular" id="analyticsTotalSummary">Активно: 0 / 0</span>
+      </div>
+    </div>
+    <div id="analyticsModalBody" class="history-list"></div>
+  </div>
+</div>
+
+<div class="modalback" id="timeModal" onclick="if(event.target===this)closeTimeModal()">
+  <div class="modal">
+    <div class="mh"><button class="close" onclick="closeTimeModal()">×</button>
+      <div class="mh-top"><small>Розподіл подій за останні 24 години та рейтинг зон</small><button class="clear-zone-hist-btn" onclick="renderTimeStats()">🔄 Оновити</button></div>
+      <h2>📈 Часова аналітика</h2>
+      <div class="hist-meta-bar"><span id="timeSummary" class="hist-total tabular">—</span></div></div>
+    <div class="time-wrap"><canvas id="timeCanvas" width="560" height="200"></canvas>
+      <div class="kpi-lbl">Зони з найбільшою сумарною тривалістю</div><div id="timeRank" class="history-list" style="padding:0"></div></div>
+  </div>
+</div>
+
+<div class="modalback" id="cfgModal" onclick="if(event.target===this)closeCfg()">
+  <div class="modal" style="width:min(100%,900px)">
+    <div class="mh"><button class="close" onclick="closeCfg()">×</button>
+      <div class="mh-top"><small>Кордони, свічення, ефекти та власні фішки — застосовується миттєво</small></div>
+      <h2>⚙️ Налаштування мапи</h2></div>
+    <div id="cfgPresets" class="cfg-presets"></div>
+    <div id="cfgBody" class="cfg-body"></div>
+  </div>
+</div>
+
+<div class="modalback" id="mapStyleModal" onclick="if(event.target===this)closeMapStyles()">
+  <div class="modal" style="width:min(100%,780px)">
+    <div class="mh"><button class="close" onclick="closeMapStyles()">×</button>
+      <div class="mh-top"><small>Оберіть вигляд мапи — застосовується миттєво</small><button id="cycleBtn" class="clear-zone-hist-btn" onclick="cycleMapStyles()">🎞 Цикл стилів</button></div>
+      <h2>🎨 Стилі мапи</h2></div>
+    <div id="mapStyleGrid" class="ms-grid"></div>
+    <div class="ms-controls">
+      <label>Товщина меж <input id="msBw" class="neon-range" style="width:100%" type="range" min="0.4" max="2.6" step="0.1" value="1" oninput="setMapTune('bw',this.value)"></label>
+      <label>Щільність заливки <input id="msFo" class="neon-range" style="width:100%" type="range" min="0.3" max="1.3" step="0.05" value="1" oninput="setMapTune('fo',this.value)"></label>
+      <button class="clear-zone-hist-btn" style="grid-column:1/-1" onclick="resetMapTune()">↺ Скинути налаштування мапи</button>
+    </div>
+  </div>
+</div>
+
+<div class="modalback" id="paletteBack" onclick="if(event.target===this)closePalette()">
+  <div class="palette">
+    <input id="paletteInput" class="palette-input" type="text" placeholder="Команда або назва району… (↑ ↓ Enter)" autocomplete="off">
+    <div id="paletteList" class="palette-list"></div>
+    <div class="palette-foot"><span><span class="kbd">↑↓</span> вибір</span><span><span class="kbd">Enter</span> виконати</span><span><span class="kbd">Esc</span> закрити</span></div>
+  </div>
+</div>
+
+<div class="modalback" id="helpBack" onclick="if(event.target===this)closeHelp()">
+  <div class="modal">
+    <div class="mh"><button class="close" onclick="closeHelp()">×</button><h2>⌨️ Гарячі клавіші</h2></div>
+    <div class="help-grid">
+      <div class="help-row"><span>Палітра команд</span><span class="kbd">Ctrl+K</span></div>
+      <div class="help-row"><span>Пошук</span><span class="kbd">/</span></div>
+      <div class="help-row"><span>Загрози</span><span class="kbd">1–6</span></div>
+      <div class="help-row"><span>Відбій</span><span class="kbd">0</span></div>
+      <div class="help-row"><span>Випадкова</span><span class="kbd">R</span></div>
+      <div class="help-row"><span>Колесо</span><span class="kbd">W</span></div>
+      <div class="help-row"><span>Аналітика</span><span class="kbd">A</span></div>
+      <div class="help-row"><span>Глобальний лог</span><span class="kbd">G</span></div>
+      <div class="help-row"><span>Повний екран</span><span class="kbd">F</span></div>
+      <div class="help-row"><span>Тема</span><span class="kbd">T</span></div>
+      <div class="help-row"><span>Пульс-маркери</span><span class="kbd">P</span></div>
+      <div class="help-row"><span>Журнал ефіру</span><span class="kbd">L</span></div>
+      <div class="help-row"><span>Режим кіоску</span><span class="kbd">K</span></div>
+      <div class="help-row"><span>Світлий інтерфейс</span><span class="kbd">U</span></div>
+      <div class="help-row"><span>Підписи областей</span><span class="kbd">B</span></div>
+      <div class="help-row"><span>Теплове свічення</span><span class="kbd">H</span></div>
+      <div class="help-row"><span>Фокус на активних</span><span class="kbd">J</span></div>
+      <div class="help-row"><span>Скасувати дію</span><span class="kbd">Ctrl+Z</span></div>
+      <div class="help-row"><span>Часова аналітика</span><span class="kbd">E</span></div>
+      <div class="help-row"><span>Щільний режим</span><span class="kbd">D</span></div>
+      <div class="help-row"><span>Неон увімк./вимк.</span><span class="kbd">N</span></div>
+      <div class="help-row"><span>CRT-ефект</span><span class="kbd">C</span></div>
+      <div class="help-row"><span>Лінійка</span><span class="kbd">M</span></div>
+      <div class="help-row"><span>Кільця відстаней</span><span class="kbd">O</span></div>
+      <div class="help-row"><span>Координатна сітка</span><span class="kbd">V</span></div>
+      <div class="help-row"><span>Патруль</span><span class="kbd">Q</span></div>
+      <div class="help-row"><span>УЛЬТРА-НЕОН</span><span class="kbd">X</span></div>
+      <div class="help-row"><span>Стилі мапи</span><span class="kbd">S</span></div>
+      <div class="help-row"><span>Налаштування мапи</span><span class="kbd">Y</span></div>
+      <div class="help-row"><span>Історія тривог 2.0</span><span class="kbd">I</span></div>
+      <div class="help-row"><span>Широка мапа</span><span class="kbd">Z</span></div>
+    </div>
+  </div>
+</div>
+
+<aside id="logDrawer" class="log-drawer">
+  <div class="log-head"><span>🗞 Журнал ефіру</span><button class="close" style="position:static" onclick="toggleLogDrawer()">×</button></div>
+  <div id="logDrawerBody" class="log-body"></div>
+</aside>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
